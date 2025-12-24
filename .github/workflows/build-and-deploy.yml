@@ -21,12 +21,20 @@ jobs:
       - name: Build All PDFs
         run: |
           mkdir -p _site
+
+          echo "<html><head><title>Proposals</title></head><body><h1>Proposal PDFs</h1><ul>" > _site/index.html
+
           for f in $(find . -name main.tex); do
             dir=$(dirname "$f")
+            name=$(echo $dir | sed 's/\//_/g')
             echo "Building PDF in $dir"
             (cd "$dir" && latexmk -pdf main.tex)
-            cp "$dir/main.pdf" _site/"$(echo $dir | sed 's/\//_/g')__main.pdf"
+            cp "$dir/main.pdf" "_site/${name}__main.pdf"
+
+            echo "<li><a href='${name}__main.pdf'>${name}__main.pdf</a></li>" >> _site/index.html
           done
+
+          echo "</ul></body></html>" >> _site/index.html
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
