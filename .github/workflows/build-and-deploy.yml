@@ -1,0 +1,48 @@
+name: Build and Deploy PDFs
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install TeX Live
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y texlive-full latexmk
+
+      - name: Build All PDFs
+        run: |
+          mkdir -p _site
+          for f in $(find . -name main.tex); do
+            dir=$(dirname "$f")
+            echo "Building PDF in $dir"
+            (cd "$dir" && latexmk -pdf main.tex)
+            cp "$dir/main.pdf" _site/"$(echo $dir | sed 's/\//_/g')__main.pdf"
+          done
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
